@@ -29,6 +29,13 @@ public protocol VGPlayerViewDelegate: class {
     /// - Parameter playerView: playerView
     func vgPlayerView(didDisplayControl playerView: VGPlayerView)
     
+    /// Fullscreen for potrait mode
+    ///
+    ///- Parameters:
+    ///     -  playerView: player view
+    ///     - shouldPlayInPotrait: PortraitMode display
+    func vgPlayerView(shouldPlayInPortrait playerView: VGPlayerView) -> Bool
+    
 }
 
 // MARK: - delegate methods optional
@@ -39,6 +46,10 @@ public extension VGPlayerViewDelegate {
     func vgPlayerView(didTappedClose playerView: VGPlayerView) {}
     
     func vgPlayerView(didDisplayControl playerView: VGPlayerView) {}
+    
+    func vgPlayerView(shouldPlayInPortrait playerView: VGPlayerView) -> Bool {
+        return false
+    }
 }
 
 public enum VGPlayerViewPanGestureDirection: Int {
@@ -265,19 +276,63 @@ extension VGPlayerView {
     }
 
     open func enterFullscreen() {
-        let statusBarOrientation = UIApplication.shared.statusBarOrientation
-        if statusBarOrientation == .portrait{
-            parentView = (self.superview)!
-            viewFrame = self.frame
-        }
-        UIDevice.current.setValue(UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
-        UIApplication.shared.statusBarOrientation = .landscapeRight
-        UIApplication.shared.setStatusBarHidden(false, with: .fade)
+        
+        let displayInPotrait = delegate?.vgPlayerView(shouldPlayInPortrait: self) ?? false
+          if displayInPotrait {
+              parentView = (self.superview)!
+              viewFrame = self.frame
+              let rectInWindow = convert(bounds, to: UIApplication.shared.keyWindow)
+              removeFromSuperview()
+              frame = rectInWindow
+              UIApplication.shared.keyWindow?.addSubview(self)
+              self.snp.remakeConstraints({ [weak self] (make) in
+                  guard let strongSelf = self else { return }
+                  make.width.equalTo(strongSelf.superview!.bounds.width)
+                  make.height.equalTo(strongSelf.superview!.bounds.height)
+              })
+             
+              isFullScreen = true
+              fullscreenButton.isSelected = true
+              delegate?.vgPlayerView(self, willFullscreen: isFullScreen)
+          }
+          else {
+              let statusBarOrientation = UIApplication.shared.statusBarOrientation
+              if statusBarOrientation == .portrait{
+                  
+              }
+              parentView = (self.superview)!
+              viewFrame = self.frame
+              UIDevice.current.setValue(UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
+              UIApplication.shared.statusBarOrientation = .landscapeRight
+              UIApplication.shared.setStatusBarHidden(false, with: .fade)
+          }
     }
     
     open func exitFullscreen() {
-        UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
-        UIApplication.shared.statusBarOrientation = .portrait
+        
+        let displayInPotrait = delegate?.vgPlayerView(shouldPlayInPortrait: self) ?? false
+        if displayInPotrait {
+            if parentView == nil { return }
+            removeFromSuperview()
+            parentView!.addSubview(self)
+            let frame = parentView!.convert(viewFrame, to: UIApplication.shared.keyWindow)
+            self.snp.remakeConstraints({ (make) in
+                make.centerX.equalTo(viewFrame.midX)
+                make.centerY.equalTo(viewFrame.midY)
+                make.width.equalTo(frame.width)
+                make.height.equalTo(frame.height)
+            })
+            viewFrame = CGRect()
+            parentView = nil
+            isFullScreen = false
+            fullscreenButton.isSelected = false
+            delegate?.vgPlayerView(self, willFullscreen: isFullScreen)
+            
+        }
+        else {
+            UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+            UIApplication.shared.statusBarOrientation = .portrait
+        }
     }
     
     /// play failed
