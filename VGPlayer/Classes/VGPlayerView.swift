@@ -77,6 +77,7 @@ open class VGPlayerView: UIView {
     open var topView : UIView = {
         let view = UIView()
         view.backgroundColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0.5)
+        view.isHidden = true
         return view
     }()
     open var titleLabel : UILabel = {
@@ -366,11 +367,11 @@ extension VGPlayerView {
     
     internal func displayControlAnimation() {
         bottomView.isHidden = false
-        topView.isHidden = false
+        topView.isHidden = true
         isDisplayControl = true
         UIView.animate(withDuration: 0.5, animations: {
             self.bottomView.alpha = 1
-            self.topView.alpha = 1
+            self.topView.alpha = 0
         }) { (completion) in
             self.setupTimer()
         }
@@ -744,7 +745,7 @@ extension VGPlayerView {
             make.left.equalTo(strongSelf)
             make.right.equalTo(strongSelf)
             make.top.equalTo(strongSelf)
-            make.height.equalTo(64)
+            make.height.equalTo(42)
         }
         closeButton.snp.makeConstraints { [weak self] (make) in
             guard let strongSelf = self else { return }
@@ -765,7 +766,7 @@ extension VGPlayerView {
             make.left.equalTo(strongSelf)
             make.right.equalTo(strongSelf)
             make.bottom.equalTo(strongSelf)
-            make.height.equalTo(52)
+            make.height.equalTo(42)
         }
         
         playButtion.snp.makeConstraints { [weak self] (make) in
